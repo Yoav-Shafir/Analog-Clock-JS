@@ -2,310 +2,208 @@
 <html lang="en">
 <head>
 	<meta charset="UTF-8">
-	<title>Solar System</title>
+	<title>Analog Clock</title>
 	<style>
-		html, body {
-			height: 100%;
+		*, 
+		*:before, 
+		*:after {
+  		-moz-box-sizing: border-box; 
+  		-webkit-box-sizing: border-box; 
+  		box-sizing: border-box;
+ 		}
+		#wrapper {
+			width: 400px;
+			height: 400px;
+			background: -webkit-gradient(linear, left top, left bottom, color-stop(1%,#000000), color-stop(100%,#7c7c7c)); 
+      background: -webkit-linear-gradient(top, #000000 1%,#7c7c7c 100%);
+			margin: 100px auto;
+			padding: 50px;
+			border-radius: 200px;
+			border: 1px solid #000;
 		}
-		.flexbox {
-			display: -webkit-box;
-  			-webkit-box-orient: horizontal;
-  			-webkit-box-pack: center;
-  			-webkit-box-align: center; }
-		body {		
-  			background: #000 url('img/space.jpg') no-repeat;
-  			overflow: hidden; }
-  		#message {		
-  			width: 400px;
-  			height: 200px;
-  			position: absolute;
-  			left: 50%;
-  			margin-left: -200px;
-  			font-family: Arial;
+		#clock {
+		  width: 300px;
+		  height: 300px;
+		  position: relative;
+			-webkit-transition:-webkit-transform linear 1s;
+		}
+		#hours, #min, #sec {
+		  width: 1px;
+		  position: absolute;
+		  -webkit-transform-origin:100% 100%;
+		  -webkit-transition:all linear 1s;
+			margin-left: 149px;
+		}
+		.inVisible{
+			opacity: 0;
+		}
+		.inVisible.fadeIn {
+			opacity: 1;	
+		}
+		#hours {
+		  background: red;
+		  height: 70px;
+		  margin-top: 80px;
+		}
+		#min {
+			background: green;
+		  height: 115px;
+		  margin-top: 35px;
+		}
+		#sec {
+		  width: 1px;
+			height: 115px;
+			background: #ccc;
+			position: absolute;
+			margin-top: 35px;
+			-webkit-transform-origin: 100% 100%;
+			-webkit-transition: -webkit-transform linear 1s;
+		}
+		.hour{
+			opacity: 0;
+			width:50px;
+			height:50px;
+		  border: 1px solid #fff;
+		  border-radius: 25px;
+		  line-height: 50px;
+		  text-align: center;
+		  font-style:italic;
+			color: #fff;
+			position:absolute;
+			left: 125px;
+			top: 125px;
+			font-size: 25px;
+			-webkit-transition: all 1.5s;
+			text-shadow:2px 0px #000;
+		}
+		#circle {
+		  width: 10px;
+		  height: 10px;
+		  position:absolute;
+		  background: #fff;
+		  border-radius: 5px;
+		  left: 145px;
+		  top:145px;
+		}
+		.rotate {
+			-webkit-transform: rotate(360deg);
+		}
+		#message {		
+			position: fixed;
+			top:0;
+			left:0;
+			bottom:0;
+			right:0;
+  		font-family: Arial;
  			font-size: 25px;
  			color: #fff;
  			text-align: center;
-  			display: none; }	
-		#container {
-			width: 200px;
-			height: 200px;
-			position: relative; }
-		#sun {
-			width: 200px;
-			height: 200px;
-			background:  url('img/sun.png') ;
-			background-position: center center;
-			background-repeat: no-repeat;
-			background-size:  150px 150px ;
-			position:absolute;
-			z-index:0; }
-		img {
-			position: absolute;
-		}
+ 			padding-top: 100px;
+ 			margin:0;
+ 			background: #000;
+ 			z-index:99999;
+  		display: none; }	
 	</style>
 </head>
-<body class="flexbox">
-	<p id="message">This content is available only in Chrome.</p>
-	<div id="container" class="flexbox">
-		<div id="sun"></div>
-	</div>
-	<script>
+<body>
+		<p id="message">This content is available only in Chrome.</p>
+		<div id="wrapper">	
+			<div id="clock">
+	    	<div id="hours" class="inVisible"></div>   
+	    	<div id="sec" class="inVisible"></div>  
+	    	<div id="min" class="inVisible"></div>  
+	    	<div id="circle"></div>
+  		</div>
+		</div>
+  <script>
 
-		var container, itemsManager, propsList;
+  	// basic browser detection.	
+  	if (!window.chrome) document.getElementById( 'message' ).style.display = 'block';
+			
+  	var angle, radius, step, points, offSet, secStep, 
+  		minStep, hourStep, date, inVisibleElemes, i; 
 
-		container       = document.getElementById( 'container' );
-
-		// caching container props
-		containerWidth  = container.offsetWidth;
-		containerHeight = container.offsetHeight;
-
-
-
-		// data for instantiating the stars classes.
-		propsList = [
-			{width:20,height:20,radX:100,radY:10,src:'img/mercury.png',id:'mercury', speed: 1.5},
-			{width:40,height:40,radX:150,radY:10,src:'img/venus.png',id:'venus', speed: 1.25},
-			{width:60,height:60,radX:250,radY:10,src:'img/earth.png',id:'earth', speed: 1},
-			{width:70,height:70,radX:325,radY:10,src:'img/mars.png',id:'mars', speed: 0.75},
-			{width:90,height:90,radX:400,radY:10,src:'img/jupiter.png',id:'jupiter', speed: 0.75},
-			{width:110,height:110,radX:475,radY:10,src:'img/saturn.png',id:'saturn', speed: 0.5},
-			{width:90,height:90,radX:550,radY:10,src:'img/uranus.png',id:'uranus', speed: 0.25}
-		]
-
-
-
-		// all images to be pre loaded before displaying the page.
-		imagesToPreload = ['img/space.jpg', 'img/mercury.png', 'img/venus.png', 'img/earth.png', 'img/mars.png', 'img/jupiter.png', 'img/saturn.png', 'img/uranus.png'];
-
-
-
-		// holds all stars objects & responsible for running the interval.
-		starsManager = ( function () {
-
-			var items;
-
-			items = [];
-
-			function add( item ) {
-				items.push( item );
-			}
-
-			function createElements() {
-				var i, len;
-
-				i   = 0;
-				len = items.length;
-
-				for ( ; i < len; i++ ) {
-					items[i].createElement();
-				}
-			}
-
-			function startInterval() {
-				(function updateLocation() {
-					for ( var i = 0; i < items.length; i++ ) {
-						items[i].updateLocation();
-					}
-					setTimeout( arguments.callee, 50 );
-				})();
-			}
-
-			// public api.
-			return {
-				add            : add,	
-				createElements : createElements,
-				startInterval  : startInterval
-			}
-
-		})();
+  	step    = 360/12;
+  	angle   = -2 * step ;
+  	radius  = 150;
+		offSet  = 150 - 25;
+		points  = [];
+		secStep = 360 / 60;
+		minStep = 360 / 60;
+		hourStep= 360 / 12;
+		date    = new Date();
+		sec     = date.getSeconds();
+		i       = 0;
 		
 
-
-		function Star( index, props ) {
-
-			this.zIndex      = ++index;
-
-			// random angle ( 0 - 360 ) for random position.
-			this.angle       = Math.floor( Math.random() * 360 ); 
-
-			// convert degrees to radians. 
- 			this.radians     = ((Math.PI * 2) / 360) * this.angle;
- 			this.el          = null;
- 			
- 			// each degree will add/substruct this unit of scaling
- 			this.scaleUnit   = 0.6 / 180;
- 			
- 			// max scale is 1 ( default size ) & min scale is 0.4.
- 			this.basicScale  = 0.4;    
-
- 			// add properties to the instance from the propsList.
- 			for  ( p in props ) {
-				this[p] = props[p];
-			}
+		inVisibleElemes = document.querySelectorAll('.inVisible');
+		window.setTimeout(function() {
+			[].forEach.call(inVisibleElemes, function(item) {
+				item.classList.add('fadeIn');	
+			});
+		}, 1000);
 			
-			// centering the element with regard to sun.
-			this.widtCompensation   = ( containerWidth * 0.5 ) - ( this.width * 0.5 );
-			this.heightCompensation = ( containerHeight * 0.5 ) - ( this.height * 0.5 ); 
-		}
 
-		// get the left position
-		Star.prototype.calculateLeftPos = function() {
-			var left;
+  	
+  	for (; i < 12; i++) {
+  		var radians, posX, posY, div, h;
 
-			left = Math.cos( this.radians ) * this.radX;
-			left = parseFloat( left.toFixed( 2 ), 10 );
+  		radians = ((Math.PI * 2) / 360) * angle;
+  		posX     = Math.round( (Math.cos( radians ) * radius) );
+  		posY     = Math.round( (Math.sin( radians ) * radius) );
 
-			return left + this.widtCompensation;
-		}
+  		points.push({x: posX + offSet, y: posY + offSet});
 
-		// get the top position
-		Star.prototype.calculateTopPos = function() { 
-			var top; 
+  		div = document.createElement('div');
+  		div.className = 'hour';
+  		div.id = i;
+  		h = document.createTextNode(i+1);
+  		div.appendChild(h);
+  		document.getElementById('clock').appendChild(div);
+  
+  		angle += step;
+  	}
+  	
+  	// animate position.
+  	window.setTimeout(function() {
+  		var hours = document.querySelectorAll('.hour');
+	  	[].forEach.call(hours, function(item, index) {
+	  		item.style.cssText = 'left:' + points[index].x + 'px;top:' + points[index].y + 'px;opacity:1'
+	  	});
+	  	window.setTimeout(function() {
+	  		document.getElementById('clock').className = 'rotate';
+	  	}, 1000);
+	  	
+  	}, 1000);
 
-			top = Math.sin(  this.radians ) * this.radY;
-			top = parseFloat( top.toFixed( 2 ), 10 );
 
-			return top + this.heightCompensation;
-		}
+		(function update() {
 
-		// create the image & append it to the container.
-		Star.prototype.createElement = function() {
-			var elem;
+			var d, h, totalSeconds, m, percentage, addToHours;
 
-			elem = document.createElement( 'img' );
+			d = new Date();
+			h = d.getHours();
+			m = d.getMinutes();
+			if (h > 12)	h -= 12;
+
+			// handle seconds.
+			totalSeconds = sec++;
+			document.getElementById('sec').style.cssText = '-webkit-transform: rotate(' + ( totalSeconds * secStep ) + 'deg);';
+
+			// handle minutes.
+			document.getElementById('min').style.cssText = '-webkit-transform: rotate(' + ( m * minStep ) + 'deg);'
 			
-			elem.setAttribute( 'src', this.src );
-			elem.setAttribute( 'id', this.id );
-			elem.setAttribute( 'width', this.width );
-			elem.setAttribute( 'height', this.height );
+			// handle hours.
+			percentage = (m / 60) * 100;
+			addToHours = (30 * percentage) / 100;
+			document.getElementById('hours').style.cssText = '-webkit-transform: rotate(' + ( ( h * hourStep ) + addToHours ) + 'deg);'
 
-			container.appendChild( elem );
-
-			// keep a reference in the el property.
-			this.el = document.getElementById( this.id );
-		}
-		Star.prototype.updateLocation = function() {
-
-			var top, left, scaleFactor;
-
-			// update the angle factor.
-			this.angle += this.speed;
-			if ( this.angle >= 360 ) this.angle = 0;
-						
-			// set the new radians.
-			this.radians = ((Math.PI * 2) / 360) * this.angle;
-
-			// get new left & top.
-			left = this.calculateLeftPos();
-			top  = this.calculateTopPos();
+			window.setTimeout(function() {
+				update();
+			}, 1000);	
 			
-			if ( this.angle >= 90 && this.angle < 270 ) 
-				scaleFactor = 270 - this.angle; 
-			
-			if ( this.angle >= 270 && this.angle <= 360 ) 
-				scaleFactor = this.angle - 270;      
-			
-			if ( this.angle >= 0 && this.angle < 90 ) 
-				scaleFactor = 90 + this.angle;
-			
-			
-			this.el.style.zIndex = ( this.angle > 180 ) ? this.zIndex * -1 : this.zIndex;
-			this.el.style.webkitTransform = "translate3d(" + left + "px, " + top + "px, 0) scale(" + (parseFloat(this.basicScale) 
-				+ parseFloat((scaleFactor * this.scaleUnit))) + ")";
-		}
+		})();	
 
-
-		// start all.
-		function initializeStars() {
-			for (var i = 0; i < propsList.length; i++ ) {
-				var star, props;
-
-				props = propsList[i];
-				star  = new Star( i, props );
-				starsManager.add( star );
-			}
-			starsManager.createElements();
-			starsManager.startInterval();
-		}
-		
-
-		// for some reason the body background is not being rendered well,
-		// unless we force the window to resize it self ( ? ).
-		function shakeWindow() {
-			setTimeout(function() {
-				var w, h;
-				
-				w = window.innerWidth - 1;
-				h = window.innerHeight - 1;	
-
-				document.body.style.width  = w + 'px';
-				document.body.style.height = h + 'px';
-			}, 100);
-		}
-		
-	
-
-		// this is a chrome browser, display page.
-		function displayPage() {
-			initializeStars();
-			shakeWindow();
-		}
-
-
-
-		// pre loading a collection of images before displaying the page.
-		function preloadImages( images ) {
-			var i, len, loadedImages;
-
-			i            = 0;
-			len          = images.length;
-			loadedImages = [];
-
-			for ( ; i < len; i++ ) {
-				var image; 
-				
-				image = new Image();
-				image.onload = (function( index ) {
-						return function() {
-							loadedImages.push( null );
-
-							if ( loadedImages.length === imagesToPreload.length ) 
-								
-								// all images are loaded.
-								displayPage();
-							
-						}
-				})( i );
-				image.src = images[i];
-			}
-		}
-		
-
-		// test is Chrome.
-		function checkIsChrome() {
-			return !!window.chrome;
-		}
-
-		
-		// show user message if not Chrome
-		function displayUnsupportedBrowserMessage() {
-			var message;
-
-			message = document.getElementById( 'message' );
-			message.style.display = 'block';
-		}
-
-		
-
-		function init() {	
-			if ( checkIsChrome() ) 
-				preloadImages( imagesToPreload );	
-			else 
-				displayUnsupportedBrowserMessage();
-		}
-
-		init();
-
-	</script>
+  </script>
 </body>
 </html>
